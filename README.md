@@ -24,16 +24,34 @@ A Non-Zoom flow (for meetings that don't need Zoom) opens Meeting Media Manager 
 ## Install on a laptop
 
 1. Open the [latest release](https://github.com/carl-gian/Project-Preflight/releases/latest) and download
-   **Preflight.zip**.
-2. Unzip it into a folder you can write to, for example `C:\Preflight` or a folder on the Desktop.
-   Keep `Preflight.exe`, `Preflight.ps1` and the `media` folder together.
-3. Double-click **Preflight.exe**.
-   Windows may say it "protected your PC", because the app isn't signed. Choose **More info**, then **Run anyway**.
-   It only asks once.
-4. The first start asks a few questions about this laptop. You can change them later in **Settings**.
-5. To open Preflight every time someone signs in: **Settings → General → Start Preflight when Windows starts**.
+   **PreflightSetup.exe**.
+2. Run it. Windows may say it "protected your PC", because the installer isn't signed. Choose **More info**, then
+   **Run anyway**.
+3. Pick the options you want:
+   - **Desktop shortcut**
+   - **Start Preflight when Windows starts**, so it opens as soon as someone signs in
+4. Leave **Open Preflight now** ticked and choose **Finish**. The first start asks a few questions about this laptop;
+   you can change them later in **Settings**.
+
+The installer doesn't need administrator rights. It installs for the signed-in Windows user, in
+`%LOCALAPPDATA%\Programs\Audio-Video Preflight`, and adds Preflight to the Start menu.
 
 Requirements: Windows 10 or 11, with the built-in Windows PowerShell 5.1. Nothing else to install.
+
+### Already have Preflight in a folder?
+
+Run the installer anyway. Your settings and window layout are kept, because they live in Documents, not in the
+program folder. Afterwards you can delete the old folder, and the old `Run-Preflight.vbs` shortcut if you had one.
+
+### Uninstall
+
+**Settings → Apps → Installed apps → Audio-Video Preflight → Uninstall**. It asks whether to keep your settings;
+the answer is No unless you choose Yes.
+
+### Without the installer
+
+Download **Preflight.zip** from the same release, unzip it into a folder you can write to, and run
+**Preflight.exe**. Keep `Preflight.exe`, `Preflight.ps1` and the `media` folder together.
 
 ## Updates
 
@@ -84,19 +102,22 @@ Both settings files are plain text and can be edited in Notepad.
 
 ## Releasing a new version
 
+You need [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (`pwsh`),
+and NSIS for the installer (`brew install makensis` on a Mac).
+
 1. Raise the version near the top of `Preflight.ps1`:
    ```powershell
-   $Script:AppVersion = [version]"5.6.1"
+   $Script:AppVersion = [version]"5.6.2"
    ```
-2. Add what changed to [CHANGELOG.md](CHANGELOG.md).
-3. Build the package:
+2. Add a `## [5.6.2] - date` section to [CHANGELOG.md](CHANGELOG.md). It becomes the release notes.
+3. Commit and push.
+4. Build and publish:
    ```bash
-   pwsh ./Publish-Release.ps1
+   pwsh ./Publish-Release.ps1 -Publish
    ```
-   This checks the script for errors, then writes `dist/Preflight.zip` and `dist/Preflight.zip.sha256`.
-4. On GitHub, create a release tagged `v5.6.1` (the same number) and attach **both** files from `dist/`, as they
-   are. Leave "pre-release" off.
-   Or run `pwsh ./Publish-Release.ps1 -Publish` with the [gh CLI](https://cli.github.com) signed in.
+   This checks the script for errors, builds `Preflight.zip`, its checksum and `PreflightSetup.exe` in `dist/`, and
+   creates the GitHub release tagged `v5.6.2` with all three attached. It signs in with the GitHub account git
+   already uses (or `GH_TOKEN`). Without `-Publish` it only builds.
 
 Every laptop installs it the next time Preflight starts.
 
@@ -107,7 +128,7 @@ build of it. To rebuild it (needs [Go](https://go.dev)):
 
 ```bash
 cd launcher
-go run ./tools/makeicon icon.png      # redraws the icon
+go run ./tools/makeicon -png icon.png      # redraws the icon
 go-winres simply --icon icon.png --manifest gui --arch amd64 \
   --product-name "Audio-Video Preflight" --file-description "Audio-Video Preflight launcher" \
   --product-version 5.6.0.0 --file-version 5.6.0.0 --original-filename Preflight.exe
@@ -122,14 +143,22 @@ GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H=windowsgui -s -w" -o .
 | `Preflight.exe` | The launcher |
 | `media/` | Photos, videos and icons the checklist shows |
 | `launcher/` | Source for `Preflight.exe` and its icon |
-| `Publish-Release.ps1` | Builds a release package |
+| `installer/` | The NSIS script and artwork for `PreflightSetup.exe` |
+| `Publish-Release.ps1` | Builds the release files and publishes them |
 | `Run-Preflight.vbs` | The old launcher. Still works; `Preflight.exe` replaces it |
 
 ## Design
 
 The look follows **Steward**, the shared design for these tools:
 [kingdom-project-design](https://github.com/SymboBingo12/kingdom-project-design). Its colours, buttons, switches and
-wording rules are used throughout. The app icon and the update screen artwork are original.
+wording rules are used throughout. The app icon, the update screen and the installer artwork are original.
+
+To redraw the installer artwork:
+
+```bash
+cd launcher
+go run ./tools/makeicon -ico ../installer/preflight.ico -wizard ../installer/wizard.bmp -header ../installer/header.bmp
+```
 
 ## Independent
 

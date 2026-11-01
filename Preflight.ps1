@@ -10,7 +10,7 @@ param(
 
 # The version this file is. Bump it for every GitHub release (the release tag
 # must match, e.g. v5.6.0) -- the updater compares the two.
-$Script:AppVersion = [version]"5.6.0"
+$Script:AppVersion = [version]"5.6.1"
 
 $Script:ScriptRoot = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -505,6 +505,19 @@ if ($Script:Config.TestMode) {
     }
 }
 Write-Log "=== Audio-Video Preflight v$($Script:AppVersion) (WTLC Edition) starting$(if ($JustUpdated) { ' -- just updated' }) ==="
+
+# Installed with PreflightSetup.exe: keep Windows' "Installed apps" list showing
+# the version that's really here, since updates don't go through the installer.
+$Script:UninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AudioVideoPreflight"
+try {
+    if (Test-Path $Script:UninstallKey) {
+        $entry = Get-ItemProperty -Path $Script:UninstallKey -ErrorAction Stop
+        if ("$($entry.InstallLocation)".TrimEnd('\') -eq $Script:ScriptRoot.TrimEnd('\') -and
+            $entry.DisplayVersion -ne "$($Script:AppVersion)") {
+            Set-ItemProperty -Path $Script:UninstallKey -Name DisplayVersion -Value "$($Script:AppVersion)"
+        }
+    }
+} catch {}
 
 # ----- ASSEMBLIES ------------------------------------------------------------
 Add-Type -AssemblyName PresentationFramework

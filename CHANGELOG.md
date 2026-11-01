@@ -2,6 +2,21 @@
 
 What changed in each version of Preflight. The newest is at the top.
 
+## [5.6.1] - 2026-11-02
+
+### Added
+
+- **Installer.** `PreflightSetup.exe` installs Preflight for the signed-in Windows user, with no administrator
+  rights. It adds Preflight to the Start menu, can add a Desktop shortcut and start Preflight with Windows, and
+  opens it when it finishes. Settings from an earlier copy are kept.
+- **Uninstall** from Windows Settings → Apps. It asks before removing your settings, and keeps them unless you
+  choose otherwise.
+- Releases now include the installer, and `Publish-Release.ps1 -Publish` creates the GitHub release itself.
+
+### Changed
+
+- After an automatic update, Windows' list of installed apps shows the new version number.
+
 ## [5.6.0] - 2026-11-02
 
 ### Added
@@ -43,4 +58,5 @@ What changed in each version of Preflight. The newest is at the top.
 
 Before this changelog. 5.5 added the EMEET integration.
 
+[5.6.1]: https://github.com/carl-gian/Project-Preflight/releases/tag/v5.6.1
 [5.6.0]: https://github.com/carl-gian/Project-Preflight/releases/tag/v5.6.0
