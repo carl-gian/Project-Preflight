@@ -1,0 +1,11 @@
+# Build output: the zip and checksum go on GitHub Releases, not in the repo
+dist/
+
+# Logs written next to the launcher
+launcher.log
+launcher.log.old
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

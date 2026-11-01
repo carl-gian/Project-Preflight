@@ -10,7 +10,7 @@
 #>
 param(
     [switch]$Publish,
-    [string]$Repo = "carl-gian/project-preflight",
+    [string]$Repo = "carl-gian/Project-Preflight",
     [string]$Notes = ""
 )
 $ErrorActionPreference = 'Stop'

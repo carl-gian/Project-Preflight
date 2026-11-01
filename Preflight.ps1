@@ -82,7 +82,7 @@ $Script:Config = @{
     # Updates: Preflight checks this GitHub repository's latest release on
     # start, installs a newer one, then restarts itself.
     AutoUpdate         = $true
-    UpdateRepo         = "carl-gian/project-preflight"
+    UpdateRepo         = "carl-gian/Project-Preflight"
     UpdateTimeoutSec   = 6
 }
 
@@ -4296,7 +4296,7 @@ $Script:btnSettingsSave.Add_Click({
     $repo = $Script:setUpdateRepo.Text.Trim()
     if ($repo -and $repo -notmatch '^[\w.-]+/[\w.-]+$') {
         Show-SettingsTab "Updates"
-        $Script:updStatusText.Text = "Write the repository as owner/name, for example carl-gian/project-preflight."
+        $Script:updStatusText.Text = "Write the repository as owner/name, for example carl-gian/Project-Preflight."
         return
     }
 
