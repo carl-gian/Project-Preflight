@@ -2,6 +2,19 @@
 
 What changed in each version of Preflight. The newest is at the top.
 
+## [5.6.2] - 2026-11-03
+
+### Added
+
+- **Settings → General → Camera: Turn on the EMEET virtual camera.** Off unless you turn it on. When it's on, a step
+  after the Equipment Check opens EMEET STUDIO and turns on its V Cam. You can also set where EMEET STUDIO is installed.
+
+### Changed
+
+- EMEET STUDIO is now controlled the way EMEET-OBS Bridge does it: the clicks are sent to the EMEET window in the
+  background. The mouse pointer no longer moves by itself, and EMEET STUDIO isn't brought to the front.
+- Plainer wording on the EMEET step.
+
 ## [5.6.1] - 2026-11-02
 
 ### Added

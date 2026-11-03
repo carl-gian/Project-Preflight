@@ -72,7 +72,7 @@ Open **Settings** from the top bar.
 
 | Section | What's in it |
 |---|---|
-| General | Congregation name, start with Windows, Zoom host, separate OBS scenes for Midweek and Weekend |
+| General | Congregation name, start with Windows, the EMEET virtual camera (off unless you turn it on), Zoom host, separate OBS scenes for Midweek and Weekend |
 | Window layout | Where OBS, Zoom and Meeting Media Manager open, the order they open in, and the wait between them |
 | Updates | Version, Check now, automatic updates, and which GitHub repository updates come from |
 | Advanced | Device names and IDs. Rarely needed |

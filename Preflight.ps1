@@ -10,7 +10,7 @@ param(
 
 # The version this file is. Bump it for every GitHub release (the release tag
 # must match, e.g. v5.6.0) -- the updater compares the two.
-$Script:AppVersion = [version]"5.6.1"
+$Script:AppVersion = [version]"5.6.2"
 
 $Script:ScriptRoot = if ($PSScriptRoot) {
     $PSScriptRoot
@@ -37,9 +37,9 @@ $Script:Config = @{
     ZoomSelfHostingMode = $false
     EmeetIntegMode      = $false
     EmeetPath           = "C:\Program Files\EMEET STUDIO\bin\64bit\EMEET STUDIO.exe"
-    # Position/size EMEET STUDIO is moved to during the "Let's enable the VCAM"
-    # step -- large and prominent so the operator can watch the automated
-    # clicks land. EMEET is not part of the final meeting layout.
+    # Position/size EMEET STUDIO is moved to while its virtual camera is turned
+    # on. The background clicks are aimed at this rect. EMEET is not part of
+    # the final meeting layout.
     EmeetVcamRect       = @{ X = 786; Y = 180; W = 1140; H = 619 }
     WebcamName          = "PTZ Camera"
     WebcamInstanceId    = "USB\VID_328F&PID_00C0&MI_00\8&28D0322B&0&0000"
@@ -537,10 +537,18 @@ public class Win32Native {
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int dwProcessId);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-    [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, int dwData, uint dwExtraInfo);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool ScreenToClient(IntPtr hWnd, ref POINT p);
+    [DllImport("user32.dll")] public static extern IntPtr ChildWindowFromPointEx(IntPtr hWnd, POINT p, uint flags);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT { public int X; public int Y; }
     public const int SW_RESTORE = 9;
     public const int SW_MINIMIZE = 6;
     public const int ASFW_ANY   = -1;
@@ -548,9 +556,14 @@ public class Win32Native {
     public const uint SWP_NOSIZE     = 0x0001;
     public const uint SWP_NOMOVE     = 0x0002;
     public const uint SWP_NOACTIVATE = 0x0010;
-    public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
-    public const uint MOUSEEVENTF_LEFTUP   = 0x0004;
-    public const uint MOUSEEVENTF_WHEEL    = 0x0800;
+    public const int  SW_SHOWNOACTIVATE = 4;
+    public const int  SW_SHOWNORMAL     = 1;
+    public const uint SWP_NOZORDER   = 0x0004;
+    public const uint SWP_SHOWWINDOW = 0x0040;
+    public const uint WM_MOUSEMOVE   = 0x0200;
+    public const uint WM_LBUTTONDOWN = 0x0201;
+    public const uint WM_LBUTTONUP   = 0x0202;
+    public const uint WM_MOUSEWHEEL  = 0x020A;
 }
 '@
 }
@@ -1272,24 +1285,24 @@ $xaml = @'
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,26">
           <Border Background="#22304D" CornerRadius="999" Padding="16,6">
-            <TextBlock Text="EMEET" Foreground="#B3C6E6" FontSize="17" FontWeight="Bold"/>
+            <TextBlock Text="Camera" Foreground="#B3C6E6" FontSize="17" FontWeight="Bold"/>
           </Border>
         </StackPanel>
 
         <Border Background="#1A2338" CornerRadius="16" Padding="56,52">
           <StackPanel>
-            <TextBlock Text="Let's enable the VCAM"
+            <TextBlock Text="Turn on the EMEET virtual camera"
                        Foreground="#E8EDF6" FontSize="35" FontWeight="SemiBold"
                        TextWrapping="Wrap" Margin="0,0,0,12"/>
             <TextBlock Foreground="#9AA6BE" FontSize="20" TextWrapping="Wrap" Margin="0,0,0,10">
-              <Run Text="&#8226; EMEET STUDIO will open on the right side of the screen"/>
+              <Run Text="&#8226; EMEET STUDIO opens on the right side of the screen."/>
             </TextBlock>
             <TextBlock Foreground="#9AA6BE" FontSize="20" TextWrapping="Wrap" Margin="0,0,0,36">
-              <Run Text="&#8226; The virtual camera turns on automatically -- just wait for it to finish"/>
+              <Run Text="&#8226; The virtual camera turns on by itself. Wait for it to finish."/>
             </TextBlock>
             <TextBlock x:Name="EmeetVcamStatusText" Foreground="#8FA9D6" FontSize="18" FontWeight="SemiBold"
                        TextWrapping="Wrap" Margin="0,0,0,24" Visibility="Collapsed"/>
-            <Button x:Name="BtnEmeetEnable" Content="&#9889;   Enable"
+            <Button x:Name="BtnEmeetEnable" Content="Turn on"
                     Style="{StaticResource BtnYes}" HorizontalAlignment="Left"/>
           </StackPanel>
         </Border>
@@ -1673,6 +1686,25 @@ $xaml = @'
                   </Grid>
                 </Border>
 
+                <Border Background="#1A2338" CornerRadius="14" Padding="24,12" Margin="0,0,0,16">
+                  <StackPanel>
+                    <TextBlock Text="Camera" Foreground="#E8EDF6" FontSize="16" FontWeight="Bold" Margin="0,8,0,4"/>
+                    <Grid MinHeight="64">
+                      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center" Margin="0,0,24,0">
+                        <TextBlock Text="Turn on the EMEET virtual camera" Foreground="#E8EDF6" FontSize="16"/>
+                        <TextBlock Text="Adds a step after the Equipment Check that opens EMEET STUDIO and turns on its V Cam" Foreground="#9AA6BE" FontSize="13" TextWrapping="Wrap"/>
+                      </StackPanel>
+                      <CheckBox x:Name="SetEmeetVcam" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center"
+                                AutomationProperties.Name="Turn on the EMEET virtual camera"/>
+                    </Grid>
+                    <StackPanel x:Name="SetEmeetPathPanel" Visibility="Collapsed" Margin="0,4,0,16">
+                      <TextBlock Text="Where EMEET STUDIO is installed" Foreground="#9AA6BE" FontSize="14" Margin="0,0,0,6"/>
+                      <TextBox x:Name="SetEmeetPath" Style="{StaticResource SettingsTextBox}" AutomationProperties.Name="Where EMEET STUDIO is installed"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+
                 <Border Background="#1A2338" CornerRadius="14" Padding="24,12">
                   <StackPanel>
                     <TextBlock Text="Meeting" Foreground="#E8EDF6" FontSize="16" FontWeight="Bold" Margin="0,8,0,4"/>
@@ -2039,6 +2071,9 @@ $Script:navUpdates                = $Script:window.FindName("NavUpdates")
 $Script:navAdvanced               = $Script:window.FindName("NavAdvanced")
 $Script:settingsSimplePanel       = $Script:window.FindName("SettingsSimplePanel")
 $Script:setStartWithWindows       = $Script:window.FindName("SetStartWithWindows")
+$Script:setEmeetVcam              = $Script:window.FindName("SetEmeetVcam")
+$Script:setEmeetPathPanel         = $Script:window.FindName("SetEmeetPathPanel")
+$Script:setEmeetPath              = $Script:window.FindName("SetEmeetPath")
 $Script:settingsAdvancedPanel     = $Script:window.FindName("SettingsAdvancedPanel")
 $Script:settingsAdvancedCard      = $Script:window.FindName("SettingsAdvancedCard")
 $Script:settingsLayoutPanel       = $Script:window.FindName("SettingsLayoutPanel")
@@ -2585,34 +2620,67 @@ function Set-EmeetVcamStatus {
     $Script:window.Dispatcher.Invoke([action]{}, [System.Windows.Threading.DispatcherPriority]::Render)
 }
 
-function Send-EmeetAutoClicks {
-    # Turns on EMEET STUDIO's virtual camera by replaying the same clicks an
-    # operator would make by hand: open the V Cam tab, click Enable Virtual
-    # Camera, then nudge the mouse down over the panel so it settles on the
-    # right view. Coordinates are absolute screen pixels (1080p, 100% scale) --
-    # matching where EMEET STUDIO was just positioned.
-    function Send-Click {
-        param([int]$X, [int]$Y)
-        [System.Windows.Forms.Cursor]::Position = "$X,$Y"
-        Start-Sleep -Milliseconds 80
-        [Win32Native]::mouse_event([Win32Native]::MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-        Start-Sleep -Milliseconds 60
-        [Win32Native]::mouse_event([Win32Native]::MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+# Background clicks, the same way EMEET-OBS Bridge drives EMEET STUDIO: the
+# mouse messages are posted straight to the EMEET window, so the real cursor
+# never moves and EMEET is never brought to the front. Coordinates are screen
+# pixels (1080p, 100% scale) and only line up with the window at EmeetVcamRect.
+function Get-EmeetClickTarget {
+    # The deepest child window under the point is what has to get the click.
+    param([IntPtr]$Top, [int]$X, [int]$Y)
+    $target = $Top
+    for ($i = 0; $i -lt 8; $i++) {
+        $q = New-Object Win32Native+POINT; $q.X = $X; $q.Y = $Y
+        [void][Win32Native]::ScreenToClient($target, [ref]$q)
+        $child = [Win32Native]::ChildWindowFromPointEx($target, $q, 3)   # skip invisible and disabled
+        if ($child -eq [IntPtr]::Zero -or $child -eq $target) { break }
+        $target = $child
     }
+    $q = New-Object Win32Native+POINT; $q.X = $X; $q.Y = $Y
+    [void][Win32Native]::ScreenToClient($target, [ref]$q)
+    [pscustomobject]@{
+        Hwnd   = $target
+        LParam = [IntPtr][int64]((($q.Y -band 0xFFFF) -shl 16) -bor ($q.X -band 0xFFFF))
+        Client = "$($q.X),$($q.Y)"
+    }
+}
 
+function Send-EmeetBackgroundClick {
+    param([IntPtr]$Top, [int]$X, [int]$Y)
+    $t = Get-EmeetClickTarget -Top $Top -X $X -Y $Y
+    Write-Log ("EMEET click screen({0},{1}) -> hwnd 0x{2:X} client({3})" -f $X, $Y, [int64]$t.Hwnd, $t.Client)
+    [void][Win32Native]::PostMessage($t.Hwnd, [Win32Native]::WM_MOUSEMOVE, [IntPtr]::Zero, $t.LParam)
+    Start-Sleep -Milliseconds 20
+    [void][Win32Native]::PostMessage($t.Hwnd, [Win32Native]::WM_LBUTTONDOWN, [IntPtr]1, $t.LParam)
+    Start-Sleep -Milliseconds 40
+    [void][Win32Native]::PostMessage($t.Hwnd, [Win32Native]::WM_LBUTTONUP, [IntPtr]::Zero, $t.LParam)
+}
+
+function Send-EmeetBackgroundWheel {
+    # WM_MOUSEWHEEL carries screen coordinates; the delta is in the high word.
+    param([IntPtr]$Top, [int]$X, [int]$Y, [int]$Delta)
+    $t = Get-EmeetClickTarget -Top $Top -X $X -Y $Y
+    $w = [IntPtr][int64](($Delta -band 0xFFFF) -shl 16)
+    $l = [IntPtr][int64]((($Y -band 0xFFFF) -shl 16) -bor ($X -band 0xFFFF))
+    [void][Win32Native]::PostMessage($t.Hwnd, [Win32Native]::WM_MOUSEMOVE, [IntPtr]::Zero, $t.LParam)
+    Start-Sleep -Milliseconds 20
+    [void][Win32Native]::PostMessage($t.Hwnd, [Win32Native]::WM_MOUSEWHEEL, $w, $l)
+}
+
+function Send-EmeetAutoClicks {
+    # The same steps an operator makes by hand: open the V Cam tab, click
+    # Enable Virtual Camera, then scroll the panel so it settles on the right view.
+    param([IntPtr]$Hwnd)
     Set-EmeetVcamStatus "Opening the V Cam tab..."
-    Send-Click -X 1401 -Y 561
+    Send-EmeetBackgroundClick -Top $Hwnd -X 1401 -Y 561
     Start-Sleep -Milliseconds 500
 
     Set-EmeetVcamStatus "Turning on the virtual camera..."
-    Send-Click -X 1593 -Y 703
+    Send-EmeetBackgroundClick -Top $Hwnd -X 1593 -Y 703
     Start-Sleep -Milliseconds 500
 
     Set-EmeetVcamStatus "Settling the view..."
-    [System.Windows.Forms.Cursor]::Position = "1200,600"
-    Start-Sleep -Milliseconds 500
-
-    [Win32Native]::mouse_event([Win32Native]::MOUSEEVENTF_WHEEL, 0, 0, -2000, 0)
+    Send-EmeetBackgroundWheel -Top $Hwnd -X 1200 -Y 600 -Delta -2000
+    Start-Sleep -Milliseconds 300
     Write-Log "EMEET STUDIO virtual-camera click sequence complete."
 }
 
@@ -2620,7 +2688,7 @@ function Show-EmeetSetupScreen {
     $Script:window.Topmost = $false
     Set-EmeetVcamStatus ""
     $Script:btnEmeetEnable.IsEnabled = $true
-    $Script:btnEmeetEnable.Content   = "⚡   Enable"
+    $Script:btnEmeetEnable.Content   = "Turn on"
     Show-Screen "ScreenEmeetSetup"
     Update-MainSubway
 }
@@ -2630,7 +2698,7 @@ function Enable-EmeetVcam {
     $Script:window.Topmost = $false
 
     if (-not (Test-Path $Script:Config.EmeetPath)) {
-        Set-EmeetVcamStatus "EMEET STUDIO wasn't found on this laptop -- skipping."
+        Set-EmeetVcamStatus "EMEET STUDIO isn't installed where Settings says. Skipping this step."
         Write-Log "EMEET STUDIO path not found: $($Script:Config.EmeetPath)" "WARN"
         Start-Sleep -Milliseconds 900
         $Script:State.EmeetVcamEnabled = $true
@@ -2650,7 +2718,7 @@ function Enable-EmeetVcam {
                           -WorkingDirectory (Split-Path $Script:Config.EmeetPath)
             Write-Log "EMEET STUDIO launched for VCAM setup."
         } catch {
-            Set-EmeetVcamStatus "Couldn't open EMEET STUDIO -- continuing without it."
+            Set-EmeetVcamStatus "Couldn't open EMEET STUDIO. Continuing without it."
             Write-Log "EMEET STUDIO launch failed: $($_.Exception.Message)" "ERROR"
             Start-Sleep -Milliseconds 900
             $Script:State.EmeetVcamEnabled = $true
@@ -2665,16 +2733,21 @@ function Enable-EmeetVcam {
     if ($proc) {
         try {
             $landed = $false
+            $h  = $proc.MainWindowHandle
+            $fg = [Win32Native]::GetForegroundWindow()
             for ($attempt = 1; $attempt -le 2; $attempt++) {
-                [Win32Native]::ShowWindow($proc.MainWindowHandle, [Win32Native]::SW_RESTORE) | Out-Null
-                Start-Sleep -Milliseconds 300
-                [Win32Native]::MoveWindow($proc.MainWindowHandle, $rect.X, $rect.Y, $rect.W, $rect.H, $true) | Out-Null
-                [Win32Native]::AllowSetForegroundWindow([Win32Native]::ASFW_ANY) | Out-Null
-                [Win32Native]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+                # Restored and moved without activating it, as EMEET-OBS Bridge does.
+                if ([Win32Native]::IsIconic($h) -or -not [Win32Native]::IsWindowVisible($h) -or [Win32Native]::IsZoomed($h)) {
+                    [void][Win32Native]::ShowWindow($h, [Win32Native]::SW_SHOWNOACTIVATE)
+                    if ([Win32Native]::IsZoomed($h)) { [void][Win32Native]::ShowWindow($h, [Win32Native]::SW_SHOWNORMAL) }
+                    Start-Sleep -Milliseconds 200
+                }
+                [void][Win32Native]::SetWindowPos($h, [IntPtr]::Zero, $rect.X, $rect.Y, $rect.W, $rect.H,
+                    ([Win32Native]::SWP_NOZORDER -bor [Win32Native]::SWP_NOACTIVATE -bor [Win32Native]::SWP_SHOWWINDOW))
                 Start-Sleep -Milliseconds 300
 
                 $winRect = New-Object Win32Native+RECT
-                [Win32Native]::GetWindowRect($proc.MainWindowHandle, [ref]$winRect) | Out-Null
+                [Win32Native]::GetWindowRect($h, [ref]$winRect) | Out-Null
                 $landed = ([Math]::Abs($winRect.Left - $rect.X) -le 10) -and ([Math]::Abs($winRect.Top - $rect.Y) -le 10) -and
                           ([Math]::Abs(($winRect.Right - $winRect.Left) - $rect.W) -le 20) -and
                           ([Math]::Abs(($winRect.Bottom - $winRect.Top) - $rect.H) -le 20)
@@ -2685,28 +2758,30 @@ function Enable-EmeetVcam {
                 Write-Log "EMEET STUDIO didn't land at the VCAM rect (attempt $attempt): wanted ($($rect.X),$($rect.Y)) $($rect.W)x$($rect.H), got ($($winRect.Left),$($winRect.Top)) $($winRect.Right - $winRect.Left)x$($winRect.Bottom - $winRect.Top)" "WARN"
             }
 
+            if ($fg -ne [IntPtr]::Zero -and [Win32Native]::GetForegroundWindow() -ne $fg) { [void][Win32Native]::SetForegroundWindow($fg) }
+
             if ($landed) {
                 Start-Sleep -Milliseconds 500
-                Send-EmeetAutoClicks
+                Send-EmeetAutoClicks -Hwnd $h
                 $vcamOk = $true
             } else {
                 # The click sequence targets fixed absolute coordinates that
                 # only line up with the window at its VCAM rect -- clicking
                 # blind at the wrong window position could hit the wrong
                 # thing entirely, so skip the automation rather than guess.
-                Set-EmeetVcamStatus "Couldn't position EMEET STUDIO -- enable the virtual camera manually, then continue."
+                Set-EmeetVcamStatus "Couldn't place EMEET STUDIO. Turn on the virtual camera in it by hand, then continue."
                 Write-Log "Skipped EMEET click automation -- window never landed at the expected rect." "ERROR"
             }
         } catch {
             Write-Log "EMEET STUDIO VCAM automation failed: $($_.Exception.Message)" "ERROR"
         }
     } else {
-        Set-EmeetVcamStatus "Couldn't find the EMEET STUDIO window -- continuing without it."
+        Set-EmeetVcamStatus "Couldn't find the EMEET STUDIO window. Continuing without it."
         Write-Log "EMEET STUDIO window not found for VCAM setup." "WARN"
     }
 
     if ($vcamOk) {
-        Set-EmeetVcamStatus "Virtual camera enabled."
+        Set-EmeetVcamStatus "The virtual camera is on."
         Start-Sleep -Milliseconds 700
     } else {
         Start-Sleep -Milliseconds 1500
@@ -2813,13 +2888,12 @@ function Start-PreflightFlow {
 $Script:HiddenConfigKeys = @(
     'AdminMode','TestMode','WebcamInstanceId','UsbAudioInstanceId',
     'JwLibraryShortcut','ObsPath','M3Path','ZoomPath',
-    'EmeetIntegMode','EmeetPath',
     'AutoUpdate','UpdateRepo','UpdateTimeoutSec'
 )
 # Keys already covered by the General section (and Setup Wizard).
 $Script:SimpleConfigKeys = @(
     'CongregationName','ZoomSelfHostingMode','ObsDynamicSceneMode',
-    'ObsSceneWeekend','ObsSceneMidweek'
+    'ObsSceneWeekend','ObsSceneMidweek','EmeetIntegMode','EmeetPath'
 )
 # Structural/technical values that aren't a single toggle or text field.
 $Script:TechnicalConfigKeys = @(
@@ -3391,6 +3465,9 @@ function Show-SettingsMenu {
     $Script:setObsSceneNamesPanel.Visibility = if ($Script:Config.ObsDynamicSceneMode) { 'Visible' } else { 'Collapsed' }
     $Script:setObsSceneWeekend.Text          = $Script:Config.ObsSceneWeekend
     $Script:setObsSceneMidweek.Text          = $Script:Config.ObsSceneMidweek
+    $Script:setEmeetVcam.IsChecked           = [bool]$Script:Config.EmeetIntegMode
+    $Script:setEmeetPathPanel.Visibility     = if ($Script:Config.EmeetIntegMode) { 'Visible' } else { 'Collapsed' }
+    $Script:setEmeetPath.Text                = $Script:Config.EmeetPath
     $Script:setAutoUpdate.IsChecked          = [bool]$Script:Config.AutoUpdate
     $Script:setUpdateRepo.Text               = $Script:Config.UpdateRepo
     $Script:settingsVersionText.Text         = "Preflight $($Script:AppVersion)"
@@ -4298,6 +4375,9 @@ $Script:btnUpdCheckNow.Add_Click({ Start-UpdateCheck -FromSettings })
 $Script:setObsScenes.Add_Click({
     $Script:setObsSceneNamesPanel.Visibility = if ($Script:setObsScenes.IsChecked -eq $true) { 'Visible' } else { 'Collapsed' }
 })
+$Script:setEmeetVcam.Add_Click({
+    $Script:setEmeetPathPanel.Visibility = if ($Script:setEmeetVcam.IsChecked -eq $true) { 'Visible' } else { 'Collapsed' }
+})
 
 $Script:btnSettingsSave.Add_Click({
     # Commit an inspector box the operator is still typing in.
@@ -4319,6 +4399,8 @@ $Script:btnSettingsSave.Add_Click({
         ObsDynamicSceneMode = [bool]$Script:setObsScenes.IsChecked
         ObsSceneWeekend     = $Script:setObsSceneWeekend.Text.Trim()
         ObsSceneMidweek     = $Script:setObsSceneMidweek.Text.Trim()
+        EmeetIntegMode      = [bool]$Script:setEmeetVcam.IsChecked
+        EmeetPath           = $Script:setEmeetPath.Text.Trim()
         AutoUpdate          = [bool]$Script:setAutoUpdate.IsChecked
         UpdateRepo          = $repo
     }
