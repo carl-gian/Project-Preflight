@@ -1,5 +1,6 @@
 // makeicon draws the Preflight artwork (original: a sound-desk fader in the
-// Steward "sound, media" duotone, the same drawing as the update screen) and
+// Steward "sound, media" duotone on a rounded tile, the same drawing as the
+// update screen) and
 // writes the files the launcher and the installer need.
 //
 //	go run ./tools/makeicon -png icon.png                      (launcher icon source)
@@ -33,6 +34,7 @@ var (
 		{34, 30, 6, 60, 3, vermilion}, {57, 30, 6, 60, 3, vermilion}, {80, 30, 6, 60, 3, vermilion},
 		{27, 62, 20, 10, 3, peach}, {50, 40, 20, 10, 3, peach}, {73, 54, 20, 10, 3, peach},
 	}
+	tile = rrect{0, 0, 120, 120, 28, ember}
 )
 
 func main() {
@@ -66,7 +68,7 @@ func main() {
 	}
 }
 
-// fader renders the round icon at any size, supersampled for smooth edges.
+// fader renders the icon tile at any size, supersampled for smooth edges.
 func fader(size int) *image.NRGBA {
 	ss := 4
 	if size <= 48 {
@@ -81,7 +83,7 @@ func fader(size int) *image.NRGBA {
 				for sx := 0; sx < ss; sx++ {
 					x := (float64(px) + (float64(sx)+0.5)/float64(ss)) / k
 					y := (float64(py) + (float64(sy)+0.5)/float64(ss)) / k
-					if math.Hypot(x-60, y-60) > 60 {
+					if !inRRect(x, y, tile) {
 						continue
 					}
 					c := ember

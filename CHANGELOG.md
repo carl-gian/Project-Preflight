@@ -14,6 +14,12 @@ What changed in each version of Preflight. The newest is at the top.
 - EMEET STUDIO is now controlled the way EMEET-OBS Bridge does it: the clicks are sent to the EMEET window in the
   background. The mouse pointer no longer moves by itself, and EMEET STUDIO isn't brought to the front.
 - Plainer wording on the EMEET step.
+- **New look for buttons.** Buttons, the Midweek / Weekend choice and labels have squared-off corners instead of
+  round pill ends.
+- **Icons.** Buttons and the Settings menu have clear line icons, drawn for Preflight, in place of text symbols
+  like ✓ and ▶. The window layout presets show the shape they make. The Settings menu marks the open section with a
+  coral bar.
+- The app icon, the update screen and the installer artwork use a rounded square instead of a circle.
 
 ## [5.6.1] - 2026-11-02
 

@@ -684,13 +684,38 @@ $xaml = @'
       <Setter Property="Control.Template">
         <Setter.Value>
           <ControlTemplate>
-            <Border Margin="-4" CornerRadius="999" BorderBrush="#8FA9D6" BorderThickness="3"/>
+            <Border Margin="-4" CornerRadius="14" BorderBrush="#8FA9D6" BorderThickness="3"/>
           </ControlTemplate>
         </Setter.Value>
       </Setter>
     </Style>
 
-    <!-- st-btn: pill buttons. One primary per screen, secondary for the rest. -->
+    <!-- Icons: original line drawings on a 24 x 24 grid, stroked in the text colour.
+         A button shows one when its Tag is set: Tag="{StaticResource IcoCheck}". -->
+    <Geometry x:Key="IcoCheck">M5,12.5 L10,17.5 L19,7</Geometry>
+    <Geometry x:Key="IcoArrowRight">M5,12 H19 M13,6 L19,12 L13,18</Geometry>
+    <Geometry x:Key="IcoArrowLeft">M19,12 H5 M11,6 L5,12 L11,18</Geometry>
+    <Geometry x:Key="IcoPlay">M8,5.5 L18.5,12 L8,18.5 Z</Geometry>
+    <Geometry x:Key="IcoRetry">M20,12 A8,8 0 1 1 17.66,6.34 M13.66,6.34 H17.66 V2.34</Geometry>
+    <Geometry x:Key="IcoReset">M4,12 A8,8 0 1 0 6.34,6.34 M10.34,6.34 H6.34 V2.34</Geometry>
+    <Geometry x:Key="IcoClose">M6,6 L18,18 M18,6 L6,18</Geometry>
+    <Geometry x:Key="IcoChevronUp">M6,15 L12,9 L18,15</Geometry>
+    <Geometry x:Key="IcoChevronDown">M6,9 L12,15 L18,9</Geometry>
+    <Geometry x:Key="IcoSliders">M4,7 H13 M17,7 H20 M4,17 H6 M10,17 H20 M17,7 A2,2 0 1 1 13,7 A2,2 0 1 1 17,7 M10,17 A2,2 0 1 1 6,17 A2,2 0 1 1 10,17</Geometry>
+    <Geometry x:Key="IcoExternal">M14,4 H20 V10 M20,4 L11,13 M18,14 V19 A1,1 0 0 1 17,20 H5 A1,1 0 0 1 4,19 V7 A1,1 0 0 1 5,6 H10</Geometry>
+    <Geometry x:Key="IcoWindows">M4,5 H20 A1,1 0 0 1 21,6 V18 A1,1 0 0 1 20,19 H4 A1,1 0 0 1 3,18 V6 A1,1 0 0 1 4,5 Z M3,9 H21 M10,9 V19</Geometry>
+    <Geometry x:Key="IcoCapture">M4,9 V4 H9 M15,4 H20 V9 M20,15 V20 H15 M9,20 H4 V15 M9,10 H15 V14 H9 Z</Geometry>
+    <Geometry x:Key="IcoCamera">M3,7 H15 V17 H3 Z M15,10.5 L21,7 V17 L15,13.5</Geometry>
+    <Geometry x:Key="IcoSkip">M5,6 L13,12 L5,18 Z M17,6 V18</Geometry>
+    <Geometry x:Key="IcoDownload">M12,4 V15 M7,10 L12,15 L17,10 M5,20 H19</Geometry>
+    <Geometry x:Key="IcoCode">M8,7 L3,12 L8,17 M16,7 L21,12 L16,17</Geometry>
+    <Geometry x:Key="IcoLeftHalf">M3,5 H21 V19 H3 Z M12,5 V19 M6,8 H9 V16 H6 Z</Geometry>
+    <Geometry x:Key="IcoRightHalf">M3,5 H21 V19 H3 Z M12,5 V19 M15,8 H18 V16 H15 Z</Geometry>
+    <Geometry x:Key="IcoCentre">M3,5 H21 V19 H3 Z M8,9 H16 V15 H8 Z</Geometry>
+    <Geometry x:Key="IcoFull">M3,5 H21 V19 H3 Z M6,8 H18 V16 H6 Z</Geometry>
+    <Geometry x:Key="IcoSave">M5,4 H16 L20,8 V19 A1,1 0 0 1 19,20 H5 A1,1 0 0 1 4,19 V5 A1,1 0 0 1 5,4 Z M8,4 V9 H15 V4 M8,20 V14 H16 V20</Geometry>
+
+    <!-- st-btn, squared off. One primary per screen, secondary for the rest. -->
     <Style x:Key="StBtn" TargetType="Button">
       <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="Background" Value="#1A2338"/>
@@ -707,10 +732,24 @@ $xaml = @'
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="999" Padding="{TemplateBinding Padding}">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Viewbox x:Name="ico" Width="20" Height="20" Margin="0,0,10,0" VerticalAlignment="Center">
+                  <Canvas Width="24" Height="24">
+                    <Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                          Stroke="{TemplateBinding Foreground}" StrokeThickness="2.2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                  </Canvas>
+                </Viewbox>
+                <ContentPresenter x:Name="cp" VerticalAlignment="Center"/>
+              </StackPanel>
             </Border>
             <ControlTemplate.Triggers>
+              <Trigger Property="Tag" Value="{x:Null}"><Setter TargetName="ico" Property="Visibility" Value="Collapsed"/></Trigger>
+              <Trigger Property="Content" Value="{x:Null}">
+                <Setter TargetName="ico" Property="Margin" Value="0"/>
+                <Setter TargetName="cp" Property="Visibility" Value="Collapsed"/>
+              </Trigger>
               <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -771,7 +810,7 @@ $xaml = @'
     </Style>
     <Style x:Key="BtnHelp" TargetType="Button" BasedOn="{StaticResource BtnGear}"/>
 
-    <!-- Round (st-btn round) -->
+    <!-- Square icon-only button -->
     <Style x:Key="BtnClose" TargetType="Button" BasedOn="{StaticResource BtnGear}">
       <Setter Property="FontSize" Value="15"/>
       <Setter Property="Width" Value="44"/>
@@ -806,7 +845,7 @@ $xaml = @'
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="RadioButton">
-            <Border x:Name="bd" Background="#121A2B" CornerRadius="999" Padding="36,0" MinHeight="52"
+            <Border x:Name="bd" Background="#121A2B" CornerRadius="10" Padding="36,0" MinHeight="52"
                     BorderBrush="#2A3550" BorderThickness="1.5">
               <TextBlock x:Name="tb" Text="{TemplateBinding Content}"
                          Foreground="#9AA6BE" FontSize="{TemplateBinding FontSize}"
@@ -839,9 +878,19 @@ $xaml = @'
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="RadioButton">
-            <Border x:Name="bd" Background="Transparent" CornerRadius="10" Padding="16,0" MinHeight="48">
-              <TextBlock x:Name="tb" Text="{TemplateBinding Content}" Foreground="#9AA6BE"
-                         FontSize="{TemplateBinding FontSize}" FontWeight="Medium" VerticalAlignment="Center"/>
+            <Border x:Name="bd" Background="Transparent" CornerRadius="10" Padding="14,0" MinHeight="48">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border x:Name="bar" Width="3" Height="20" CornerRadius="2" Background="Transparent" Margin="0,0,11,0"/>
+                <Viewbox Width="20" Height="20" Margin="0,0,12,0">
+                  <Canvas Width="24" Height="24">
+                    <Path Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                          Stroke="{Binding Foreground, ElementName=tb}" StrokeThickness="2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                  </Canvas>
+                </Viewbox>
+                <TextBlock x:Name="tb" Text="{TemplateBinding Content}" Foreground="#9AA6BE"
+                           FontSize="{TemplateBinding FontSize}" FontWeight="Medium" VerticalAlignment="Center"/>
+              </StackPanel>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
@@ -849,6 +898,7 @@ $xaml = @'
               </Trigger>
               <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="bd" Property="Background" Value="#22304D"/>
+                <Setter TargetName="bar" Property="Background" Value="#F08A6C"/>
                 <Setter TargetName="tb" Property="Foreground" Value="#B3C6E6"/>
                 <Setter TargetName="tb" Property="FontWeight" Value="Bold"/>
               </Trigger>
@@ -957,8 +1007,8 @@ $xaml = @'
     <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#121A2B" BorderBrush="#2A3550" BorderThickness="0,0,0,1">
       <Grid Margin="32,0">
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Button x:Name="BtnSettings" Content="⚙ Settings" Style="{StaticResource BtnGear}" Margin="0,0,20,0"/>
-          <Button x:Name="BtnStartOver" Content="Start Over" Style="{StaticResource BtnStartOver}"
+          <Button x:Name="BtnSettings" Tag="{StaticResource IcoSliders}" Content="Settings" Style="{StaticResource BtnGear}" Margin="0,0,20,0"/>
+          <Button x:Name="BtnStartOver" Tag="{StaticResource IcoReset}" Content="Start Over" Style="{StaticResource BtnStartOver}"
                   Visibility="Collapsed" Margin="0,0,20,0"/>
           <StackPanel VerticalAlignment="Center">
             <TextBlock x:Name="HeaderTitle" Text="Audio-Video Preflight"
@@ -968,7 +1018,7 @@ $xaml = @'
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
           <Border x:Name="MeetingTypeBadge" Visibility="Collapsed"
-                  Background="#22304D" CornerRadius="999" Padding="14,6" Margin="0,0,20,0" VerticalAlignment="Center">
+                  Background="#22304D" CornerRadius="6" Padding="14,6" Margin="0,0,20,0" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
               <Ellipse Width="8" Height="8" Fill="#8FA9D6" Margin="0,0,8,0" VerticalAlignment="Center"/>
               <TextBlock x:Name="MeetingTypeBadgeText" Text="Midweek"
@@ -1103,8 +1153,8 @@ $xaml = @'
                        Text="• Click Open Zoom below&#10;• Start today's meeting&#10;• Come back here once it has started"
                        Foreground="#9AA6BE" FontSize="20" TextWrapping="Wrap" Margin="0,0,0,34"/>
             <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnOpenZoomIntro" Content="Open Zoom" Style="{StaticResource BtnYes}" Margin="0,0,14,0"/>
-              <Button x:Name="BtnZoomIntroContinue" Content="&#9654;   Continue"
+              <Button x:Name="BtnOpenZoomIntro" Tag="{StaticResource IcoExternal}" Content="Open Zoom" Style="{StaticResource BtnYes}" Margin="0,0,14,0"/>
+              <Button x:Name="BtnZoomIntroContinue" Tag="{StaticResource IcoArrowRight}" Content="Continue"
                       Style="{StaticResource BtnShowHow}" Visibility="Collapsed"/>
             </StackPanel>
           </StackPanel>
@@ -1117,7 +1167,7 @@ $xaml = @'
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,26">
-          <Border Background="#22304D" CornerRadius="999" Padding="16,6">
+          <Border Background="#22304D" CornerRadius="6" Padding="16,6">
             <TextBlock x:Name="SectionBadgeText" Text="Zoom Setup" Foreground="#B3C6E6" FontSize="17" FontWeight="Bold"/>
           </Border>
           <TextBlock x:Name="QuestionCounter" Text="  —  1 of 2"
@@ -1137,8 +1187,8 @@ $xaml = @'
                        Foreground="#9AA6BE" FontSize="20"
                        TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,42"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-              <Button x:Name="BtnYes"     Content="&#10003;   Yes"         Style="{StaticResource BtnYes}"     Margin="0,0,14,0"/>
-              <Button x:Name="BtnShowHow" Content="&#9654;   Show me how"  Style="{StaticResource BtnShowHow}" Visibility="Collapsed"/>
+              <Button x:Name="BtnYes" Tag="{StaticResource IcoCheck}"     Content="Yes"         Style="{StaticResource BtnYes}"     Margin="0,0,14,0"/>
+              <Button x:Name="BtnShowHow" Tag="{StaticResource IcoPlay}" Content="Show me how"  Style="{StaticResource BtnShowHow}" Visibility="Collapsed"/>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1157,7 +1207,7 @@ $xaml = @'
               <TextBlock x:Name="EqQuestionSubtext"
                          Foreground="#9AA6BE" FontSize="20"
                          TextWrapping="Wrap" Margin="0,0,0,36"/>
-              <Button x:Name="BtnYesEq" Content="&#10003;   Yes"
+              <Button x:Name="BtnYesEq" Tag="{StaticResource IcoCheck}" Content="Yes"
                       Style="{StaticResource BtnYes}" HorizontalAlignment="Left"/>
             </StackPanel>
             <Border Grid.Column="1" Width="560" Height="560" CornerRadius="12"
@@ -1177,7 +1227,7 @@ $xaml = @'
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,26">
-          <Border Background="#22304D" CornerRadius="999" Padding="16,6">
+          <Border Background="#22304D" CornerRadius="6" Padding="16,6">
             <TextBlock Text="Equipment Check" Foreground="#B3C6E6" FontSize="17" FontWeight="Bold"/>
           </Border>
         </StackPanel>
@@ -1196,7 +1246,7 @@ $xaml = @'
               <TextBlock Foreground="#9AA6BE" FontSize="20" TextWrapping="Wrap" Margin="0,0,0,36">
                 <Run Text="&#8226; Refer to the picture for how to turn on Bluetooth on the mixer"/>
               </TextBlock>
-              <Button x:Name="BtnBtSubQ1Yes" Content="&#10003;   Yes"
+              <Button x:Name="BtnBtSubQ1Yes" Tag="{StaticResource IcoCheck}" Content="Yes"
                       Style="{StaticResource BtnYes}" HorizontalAlignment="Left"/>
             </StackPanel>
             <Border Grid.Column="1" Width="560" Height="560" CornerRadius="12"
@@ -1224,7 +1274,7 @@ $xaml = @'
               <TextBlock x:Name="BtCheckStatusText" Foreground="#FF6B5E" FontSize="17"
                          TextWrapping="Wrap" Margin="0,0,0,20" Visibility="Collapsed"/>
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <Button x:Name="BtnBluetoothCheck" Content="&#10003;   Check"
+                <Button x:Name="BtnBluetoothCheck" Tag="{StaticResource IcoCheck}" Content="Check"
                         Style="{StaticResource BtnYes}" Margin="0,0,14,0"/>
                 <Button x:Name="BtnBtNotConnected" Content="Not Connected"
                         Style="{StaticResource BtnShowHow}"/>
@@ -1261,8 +1311,8 @@ $xaml = @'
               <Run Text="Click WN_Audio."/>
             </TextBlock>
             <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnBtSkip" Content="Skip" Style="{StaticResource BtnRed}" Margin="0,0,14,0"/>
-              <Button x:Name="BtnBtTryAgain" Content="&#8634;   Let's try again" Style="{StaticResource BtnGreen}"/>
+              <Button x:Name="BtnBtSkip" Tag="{StaticResource IcoSkip}" Content="Skip" Style="{StaticResource BtnRed}" Margin="0,0,14,0"/>
+              <Button x:Name="BtnBtTryAgain" Tag="{StaticResource IcoRetry}" Content="Let's try again" Style="{StaticResource BtnGreen}"/>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1284,7 +1334,7 @@ $xaml = @'
       <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Margin="40,0,0,0" Width="620">
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,26">
-          <Border Background="#22304D" CornerRadius="999" Padding="16,6">
+          <Border Background="#22304D" CornerRadius="6" Padding="16,6">
             <TextBlock Text="Camera" Foreground="#B3C6E6" FontSize="17" FontWeight="Bold"/>
           </Border>
         </StackPanel>
@@ -1302,7 +1352,7 @@ $xaml = @'
             </TextBlock>
             <TextBlock x:Name="EmeetVcamStatusText" Foreground="#8FA9D6" FontSize="18" FontWeight="SemiBold"
                        TextWrapping="Wrap" Margin="0,0,0,24" Visibility="Collapsed"/>
-            <Button x:Name="BtnEmeetEnable" Content="Turn on"
+            <Button x:Name="BtnEmeetEnable" Tag="{StaticResource IcoCamera}" Content="Turn on"
                     Style="{StaticResource BtnYes}" HorizontalAlignment="Left"/>
           </StackPanel>
         </Border>
@@ -1314,7 +1364,7 @@ $xaml = @'
     <Grid x:Name="ScreenVideo" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" Background="#000000">
       <MediaElement x:Name="VideoPlayer" LoadedBehavior="Manual" UnloadedBehavior="Stop"
                     Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-      <Button x:Name="BtnCloseVideo" Content="&#10005;" Style="{StaticResource BtnClose}"
+      <Button x:Name="BtnCloseVideo" Tag="{StaticResource IcoClose}" Style="{StaticResource BtnClose}" AutomationProperties.Name="Close video"
               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="20"/>
     </Grid>
 
@@ -1329,8 +1379,8 @@ $xaml = @'
             <TextBlock Text="Now that you've seen how — did you do it?"
                        Foreground="#9AA6BE" FontSize="20" TextAlignment="Center" Margin="0,0,0,42"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-              <Button x:Name="BtnConfirmYes" Content="&#10003;   Yes, I have" Style="{StaticResource BtnYes}"     Margin="0,0,14,0"/>
-              <Button x:Name="BtnWatchAgain" Content="&#8634;   Watch again"  Style="{StaticResource BtnShowHow}"/>
+              <Button x:Name="BtnConfirmYes" Tag="{StaticResource IcoCheck}" Content="Yes, I have" Style="{StaticResource BtnYes}"     Margin="0,0,14,0"/>
+              <Button x:Name="BtnWatchAgain" Tag="{StaticResource IcoRetry}" Content="Watch again"  Style="{StaticResource BtnShowHow}"/>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1349,7 +1399,7 @@ $xaml = @'
 
           <!-- Left panel -->
           <StackPanel Grid.Column="0" VerticalAlignment="Top">
-            <Border Background="#22304D" CornerRadius="999" Padding="14,6"
+            <Border Background="#22304D" CornerRadius="6" Padding="14,6"
                     Margin="0,0,0,28" HorizontalAlignment="Left">
               <TextBlock Text="Detection" Foreground="#B3C6E6" FontSize="15" FontWeight="Bold"/>
             </Border>
@@ -1398,7 +1448,7 @@ $xaml = @'
                   <TextBlock x:Name="DetStatusInternet" Text="Checking..." Foreground="#9AA6BE" FontSize="17" Margin="66,0,0,0"/>
                   <StackPanel x:Name="DetHelpInternet" Visibility="Collapsed" Margin="0,10,0,0">
                     <TextBlock Text="No internet detected. Check the Ethernet converter." Foreground="#9AA6BE" FontSize="16" Margin="0,0,0,8"/>
-                    <Button x:Name="BtnOpenInternet" Content="Open Network Settings" Style="{StaticResource BtnHelp}" HorizontalAlignment="Left"/>
+                    <Button x:Name="BtnOpenInternet" Tag="{StaticResource IcoExternal}" Content="Open Network Settings" Style="{StaticResource BtnHelp}" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </StackPanel>
               </Border>
@@ -1427,7 +1477,7 @@ $xaml = @'
                   <TextBlock x:Name="DetStatusWebcam" Text="Checking..." Foreground="#9AA6BE" FontSize="17" Margin="66,0,0,0"/>
                   <StackPanel x:Name="DetHelpWebcam" Visibility="Collapsed" Margin="0,10,0,0">
                     <TextBlock Text="Webcam not detected. Check the USB connection." Foreground="#9AA6BE" FontSize="16" Margin="0,0,0,8"/>
-                    <Button x:Name="BtnOpenWebcam" Content="Open Device Manager" Style="{StaticResource BtnHelp}" HorizontalAlignment="Left"/>
+                    <Button x:Name="BtnOpenWebcam" Tag="{StaticResource IcoExternal}" Content="Open Device Manager" Style="{StaticResource BtnHelp}" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </StackPanel>
               </Border>
@@ -1461,13 +1511,13 @@ $xaml = @'
                   <RadioButton x:Name="RadioWeekend" GroupName="MeetingType" Content="Weekend"
                                Style="{StaticResource BtnMeetingType}"/>
                 </StackPanel>
-                <Button x:Name="LaunchButton" Content="Launch Meeting Setup"
+                <Button x:Name="LaunchButton" Tag="{StaticResource IcoWindows}" Content="Launch Meeting Setup"
                         Style="{StaticResource BtnLaunch}" Visibility="Collapsed"/>
               </StackPanel>
             </Border>
 
-            <Button x:Name="BtnBackToEquipment"
-                    Content="&#8592; Back to Equipment Check"
+            <Button x:Name="BtnBackToEquipment" Tag="{StaticResource IcoArrowLeft}"
+                    Content="Back to Equipment Check"
                     Style="{StaticResource BtnBack}"
                     HorizontalAlignment="Center" Margin="0,20,0,0"/>
 
@@ -1523,28 +1573,28 @@ $xaml = @'
           <TextBlock Text="This wizard checks and starts everything needed for the meeting — Zoom, OBS, and Meeting Media Manager — step by step."
                      Foreground="#9AA6BE" FontSize="20" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,34"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-            <Border Background="#22304D" CornerRadius="18" Width="36" Height="36" Margin="0,0,18,0">
+            <Border Background="#22304D" CornerRadius="10" Width="36" Height="36" Margin="0,0,18,0">
               <TextBlock Text="1" Foreground="#8FA9D6" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="Answer each question with Yes. Tap Show me how for a demo video if needed."
                        Foreground="#E8EDF6" FontSize="18" TextWrapping="Wrap" VerticalAlignment="Center" Width="620"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-            <Border Background="#22304D" CornerRadius="18" Width="36" Height="36" Margin="0,0,18,0">
+            <Border Background="#22304D" CornerRadius="10" Width="36" Height="36" Margin="0,0,18,0">
               <TextBlock Text="2" Foreground="#8FA9D6" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="For Equipment Check, follow the reference photo on the right of each question."
                        Foreground="#E8EDF6" FontSize="18" TextWrapping="Wrap" VerticalAlignment="Center" Width="620"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-            <Border Background="#22304D" CornerRadius="18" Width="36" Height="36" Margin="0,0,18,0">
+            <Border Background="#22304D" CornerRadius="10" Width="36" Height="36" Margin="0,0,18,0">
               <TextBlock Text="3" Foreground="#8FA9D6" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="Detection checks your hardware automatically. Anything not ready shows a red indicator with instructions."
                        Foreground="#E8EDF6" FontSize="18" TextWrapping="Wrap" VerticalAlignment="Center" Width="620"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,34">
-            <Border Background="#22304D" CornerRadius="18" Width="36" Height="36" Margin="0,0,18,0">
+            <Border Background="#22304D" CornerRadius="10" Width="36" Height="36" Margin="0,0,18,0">
               <TextBlock Text="4" Foreground="#8FA9D6" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="Once ready, choose Midweek or Weekend and press Launch. All programs open and position themselves automatically."
@@ -1552,7 +1602,7 @@ $xaml = @'
           </StackPanel>
           <TextBlock Text="Tip: Ctrl+Shift+S exits the wizard at any time without launching anything."
                      Foreground="#9AA6BE" FontSize="16" TextAlignment="Center" Margin="0,0,0,30"/>
-          <Button x:Name="BtnWelcomeStart" Content="Got it — let's start"
+          <Button x:Name="BtnWelcomeStart" Tag="{StaticResource IcoArrowRight}" Content="Got it — let's start"
                   Style="{StaticResource BtnYes}" HorizontalAlignment="Center"/>
         </StackPanel>
       </Border>
@@ -1569,9 +1619,9 @@ $xaml = @'
                      TextWrapping="Wrap" Margin="0,0,0,20"/>
           <StackPanel x:Name="ConfirmActionBullets" Margin="0,0,0,34"/>
           <StackPanel Orientation="Horizontal">
-            <Button x:Name="BtnConfirmActionYes" Content="&#10003;   Yes, continue"
+            <Button x:Name="BtnConfirmActionYes" Tag="{StaticResource IcoCheck}" Content="Yes, continue"
                     Style="{StaticResource BtnYes}" Margin="0,0,14,0"/>
-            <Button x:Name="BtnConfirmActionBack" Content="&#8592;   Go back"
+            <Button x:Name="BtnConfirmActionBack" Tag="{StaticResource IcoArrowLeft}" Content="Go back"
                     Style="{StaticResource BtnShowHow}"/>
           </StackPanel>
         </StackPanel>
@@ -1616,7 +1666,7 @@ $xaml = @'
               <TextBox x:Name="SetupObsSceneMidweek" Style="{StaticResource SettingsTextBox}"/>
             </StackPanel>
 
-            <Button x:Name="BtnSetupFinish" Content="Finish setup"
+            <Button x:Name="BtnSetupFinish" Tag="{StaticResource IcoCheck}" Content="Finish setup"
                     Style="{StaticResource BtnYes}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Border>
@@ -1637,10 +1687,10 @@ $xaml = @'
           <StackPanel Margin="20,32,20,0">
             <TextBlock Text="Settings" Foreground="#E8EDF6" FontSize="22" FontWeight="Black" Margin="16,0,0,4"/>
             <TextBlock x:Name="SettingsVersionText" Text="" Foreground="#9AA6BE" FontSize="12" Margin="16,0,0,28"/>
-            <RadioButton x:Name="NavGeneral"  GroupName="SettingsNav" Content="General"       Style="{StaticResource NavItem}"/>
-            <RadioButton x:Name="NavLayout"   GroupName="SettingsNav" Content="Window layout" Style="{StaticResource NavItem}"/>
-            <RadioButton x:Name="NavUpdates"  GroupName="SettingsNav" Content="Updates"       Style="{StaticResource NavItem}"/>
-            <RadioButton x:Name="NavAdvanced" GroupName="SettingsNav" Content="Advanced"      Style="{StaticResource NavItem}"/>
+            <RadioButton x:Name="NavGeneral" Tag="{StaticResource IcoSliders}"  GroupName="SettingsNav" Content="General"       Style="{StaticResource NavItem}"/>
+            <RadioButton x:Name="NavLayout" Tag="{StaticResource IcoWindows}"   GroupName="SettingsNav" Content="Window layout" Style="{StaticResource NavItem}"/>
+            <RadioButton x:Name="NavUpdates" Tag="{StaticResource IcoDownload}"  GroupName="SettingsNav" Content="Updates"       Style="{StaticResource NavItem}"/>
+            <RadioButton x:Name="NavAdvanced" Tag="{StaticResource IcoCode}" GroupName="SettingsNav" Content="Advanced"      Style="{StaticResource NavItem}"/>
           </StackPanel>
         </Border>
 
@@ -1657,7 +1707,7 @@ $xaml = @'
               <TextBlock x:Name="SettingsSectionTitle" Text="General" Foreground="#F08A6C" FontSize="28" FontWeight="Bold"/>
               <TextBlock x:Name="SettingsSectionHint" Text="" Foreground="#9AA6BE" FontSize="16" TextWrapping="Wrap" Margin="0,4,0,0"/>
             </StackPanel>
-            <Button x:Name="BtnSettingsClose" Content="&#10005;" Style="{StaticResource BtnClose}"
+            <Button x:Name="BtnSettingsClose" Tag="{StaticResource IcoClose}" Style="{StaticResource BtnClose}"
                     HorizontalAlignment="Right" VerticalAlignment="Top" ToolTip="Close settings"/>
           </Grid>
 
@@ -1744,7 +1794,7 @@ $xaml = @'
 
                 <!-- Toolbar -->
                 <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,0,0,16">
-                  <Border Background="#1A2338" CornerRadius="999" Padding="16,0,6,0" Margin="0,0,12,0">
+                  <Border Background="#1A2338" CornerRadius="10" Padding="16,0,6,0" Margin="0,0,12,0">
                     <StackPanel Orientation="Horizontal">
                       <TextBlock Text="Snap" Foreground="#E8EDF6" FontSize="14" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,4,0"/>
                       <CheckBox x:Name="LayoutSnap" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True"
@@ -1752,11 +1802,11 @@ $xaml = @'
                                 ToolTip="Snap to the screen edges and to other windows. Hold Shift while dragging to place freely."/>
                     </StackPanel>
                   </Border>
-                  <Button x:Name="BtnCapturePositions" Content="Copy from open windows" Style="{StaticResource BtnGear}" Margin="0,0,12,0"
+                  <Button x:Name="BtnCapturePositions" Tag="{StaticResource IcoCapture}" Content="Copy from open windows" Style="{StaticResource BtnGear}" Margin="0,0,12,0"
                           ToolTip="Read where OBS, Zoom and M3 are on screen right now"/>
-                  <Button x:Name="BtnLayoutTryNow" Content="Try it now" Style="{StaticResource BtnGear}" Margin="0,0,12,0"
+                  <Button x:Name="BtnLayoutTryNow" Tag="{StaticResource IcoPlay}" Content="Try it now" Style="{StaticResource BtnGear}" Margin="0,0,12,0"
                           ToolTip="Move the open windows to this layout, without saving"/>
-                  <Button x:Name="BtnLayoutResetMode" Content="Reset to defaults" Style="{StaticResource BtnBack}"/>
+                  <Button x:Name="BtnLayoutResetMode" Tag="{StaticResource IcoReset}" Content="Reset to defaults" Style="{StaticResource BtnBack}"/>
                 </StackPanel>
 
                 <!-- Screen -->
@@ -1788,10 +1838,10 @@ $xaml = @'
 
                     <TextBlock Text="Quick place" Foreground="#9AA6BE" FontSize="13" Margin="0,0,0,6"/>
                     <UniformGrid Columns="2" Margin="0,0,0,16">
-                      <Button x:Name="BtnLayoutPresetTileLeft"   Content="Left half"   Style="{StaticResource BtnGear}" Margin="0,0,6,8"/>
-                      <Button x:Name="BtnLayoutPresetTileRight"  Content="Right half"  Style="{StaticResource BtnGear}" Margin="6,0,0,8"/>
-                      <Button x:Name="BtnLayoutPresetCenter"     Content="Centre"      Style="{StaticResource BtnGear}" Margin="0,0,6,0"/>
-                      <Button x:Name="BtnLayoutPresetFullscreen" Content="Full screen" Style="{StaticResource BtnGear}" Margin="6,0,0,0"/>
+                      <Button x:Name="BtnLayoutPresetTileLeft" Tag="{StaticResource IcoLeftHalf}"   Content="Left half"   Style="{StaticResource BtnGear}" Margin="0,0,6,8"/>
+                      <Button x:Name="BtnLayoutPresetTileRight" Tag="{StaticResource IcoRightHalf}"  Content="Right half"  Style="{StaticResource BtnGear}" Margin="6,0,0,8"/>
+                      <Button x:Name="BtnLayoutPresetCenter" Tag="{StaticResource IcoCentre}"     Content="Centre"      Style="{StaticResource BtnGear}" Margin="0,0,6,0"/>
+                      <Button x:Name="BtnLayoutPresetFullscreen" Tag="{StaticResource IcoFull}" Content="Full screen" Style="{StaticResource BtnGear}" Margin="6,0,0,0"/>
                     </UniformGrid>
 
                     <Border Height="1" Background="#2A3550" Margin="0,0,0,16"/>
@@ -1800,9 +1850,9 @@ $xaml = @'
                     <Grid Margin="0,0,0,16">
                       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                       <TextBlock x:Name="LayoutOrderText" Text="" Foreground="#E8EDF6" FontSize="16" VerticalAlignment="Center"/>
-                      <Button x:Name="BtnLayoutEarlier" Grid.Column="1" Content="&#9650;" Style="{StaticResource LayoutOrderBtn}" Margin="0,0,8,0"
+                      <Button x:Name="BtnLayoutEarlier" Tag="{StaticResource IcoChevronUp}" Grid.Column="1" Style="{StaticResource LayoutOrderBtn}" Margin="0,0,8,0"
                               ToolTip="Open earlier" AutomationProperties.Name="Open earlier"/>
-                      <Button x:Name="BtnLayoutLater"   Grid.Column="2" Content="&#9660;" Style="{StaticResource LayoutOrderBtn}"
+                      <Button x:Name="BtnLayoutLater" Tag="{StaticResource IcoChevronDown}"   Grid.Column="2" Style="{StaticResource LayoutOrderBtn}"
                               ToolTip="Open later" AutomationProperties.Name="Open later"/>
                     </Grid>
 
@@ -1824,7 +1874,7 @@ $xaml = @'
                       <TextBlock x:Name="UpdVersionText" Text="" Foreground="#E8EDF6" FontSize="20" FontWeight="Bold"/>
                       <TextBlock x:Name="UpdStatusText" Text="" Foreground="#9AA6BE" FontSize="14" TextWrapping="Wrap" Margin="0,4,0,0"/>
                     </StackPanel>
-                    <Button x:Name="BtnUpdCheckNow" Grid.Column="1" Content="Check now" Style="{StaticResource BtnYes}" VerticalAlignment="Center"/>
+                    <Button x:Name="BtnUpdCheckNow" Tag="{StaticResource IcoRetry}" Grid.Column="1" Content="Check now" Style="{StaticResource BtnYes}" VerticalAlignment="Center"/>
                   </Grid>
                 </Border>
                 <Border Background="#1A2338" CornerRadius="14" Padding="24,12">
@@ -1861,7 +1911,7 @@ $xaml = @'
           <Border Grid.Row="2" BorderBrush="#2A3550" BorderThickness="0,1,0,0" Padding="48,16">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
               <Button x:Name="BtnSettingsCancel" Content="Cancel" Style="{StaticResource BtnShowHow}" Margin="0,0,16,0"/>
-              <Button x:Name="BtnSettingsSave" Content="Save" Style="{StaticResource BtnYes}"/>
+              <Button x:Name="BtnSettingsSave" Tag="{StaticResource IcoSave}" Content="Save" Style="{StaticResource BtnYes}"/>
             </StackPanel>
           </Border>
         </Grid>
@@ -1877,7 +1927,7 @@ $xaml = @'
           <TextBlock Text="Settings saved" Foreground="#E8EDF6" FontSize="28" FontWeight="Bold" TextAlignment="Center" Margin="0,0,0,10"/>
           <TextBlock Text="Restart Preflight now so the new settings take effect."
                      Foreground="#9AA6BE" FontSize="18" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,30"/>
-          <Button x:Name="BtnRestartNow" Content="Restart now" Style="{StaticResource BtnYes}" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+          <Button x:Name="BtnRestartNow" Tag="{StaticResource IcoRetry}" Content="Restart now" Style="{StaticResource BtnYes}" HorizontalAlignment="Center" Margin="0,0,0,18"/>
           <Button x:Name="BtnRestartLater" Content="I'll restart later" Style="{StaticResource BtnBack}" HorizontalAlignment="Center"/>
         </StackPanel>
       </Border>
@@ -1888,16 +1938,16 @@ $xaml = @'
     <Border Grid.Row="0" Grid.RowSpan="3" Grid.ColumnSpan="2" x:Name="UpdateOverlay"
             Background="#121A2B" Panel.ZIndex="250" Visibility="Visible">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="560">
-        <!-- st-wait: two slow rings spread out from the art circle -->
+        <!-- st-wait: two slow outlines spread out from the art tile -->
         <Grid Width="200" Height="200" HorizontalAlignment="Center" Margin="0,0,0,32">
-          <Ellipse x:Name="UpdRing1" Width="120" Height="120" Stroke="#8FA9D6" StrokeThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5">
-            <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
-          </Ellipse>
-          <Ellipse x:Name="UpdRing2" Width="120" Height="120" Stroke="#8FA9D6" StrokeThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5">
-            <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
-          </Ellipse>
+          <Rectangle x:Name="UpdRing1" Width="120" Height="120" RadiusX="28" RadiusY="28" Stroke="#8FA9D6" StrokeThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform><ScaleTransform/></Rectangle.RenderTransform>
+          </Rectangle>
+          <Rectangle x:Name="UpdRing2" Width="120" Height="120" RadiusX="28" RadiusY="28" Stroke="#8FA9D6" StrokeThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform><ScaleTransform/></Rectangle.RenderTransform>
+          </Rectangle>
           <!-- Original art: a sound-desk fader in the "sound, media" duotone -->
-          <Ellipse Width="120" Height="120" Fill="#4A1410"/>
+          <Rectangle Width="120" Height="120" RadiusX="28" RadiusY="28" Fill="#4A1410"/>
           <Canvas Width="120" Height="120">
             <Rectangle Canvas.Left="34" Canvas.Top="30" Width="6" Height="60" RadiusX="3" RadiusY="3" Fill="#D2502F"/>
             <Rectangle Canvas.Left="57" Canvas.Top="30" Width="6" Height="60" RadiusX="3" RadiusY="3" Fill="#D2502F"/>

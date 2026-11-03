@@ -151,13 +151,16 @@ GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-H=windowsgui -s -w" -o .
 
 The look follows **Steward**, the shared design for these tools:
 [kingdom-project-design](https://github.com/SymboBingo12/kingdom-project-design). Its colours, buttons, switches and
-wording rules are used throughout. The app icon, the update screen and the installer artwork are original.
+wording rules are used throughout, except that buttons have squared-off corners rather than pill ends. The app
+icon, the update screen, the installer artwork and the button icons are original. The icons are line drawings on a
+24 × 24 grid, kept as `Ico…` geometries at the top of the window markup in `Preflight.ps1`; a button shows one when
+its `Tag` is set, for example `Tag="{StaticResource IcoCheck}"`.
 
 To redraw the installer artwork:
 
 ```bash
 cd launcher
-go run ./tools/makeicon -ico ../installer/preflight.ico -wizard ../installer/wizard.bmp -header ../installer/header.bmp
+go run ./tools/makeicon -png icon.png -ico ../installer/preflight.ico -wizard ../installer/wizard.bmp -header ../installer/header.bmp
 ```
 
 ## Independent
