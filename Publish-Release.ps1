@@ -32,6 +32,27 @@ if ($text -notmatch '\$Script:AppVersion\s*=\s*\[version\]"([\d.]+)"') { throw "
 $version = $Matches[1]
 $tag = "v$version"
 
+# ----- Before building: is this version already out? ---------------------------
+# Checked first so a repeat run stops in a second instead of after a full build.
+if ($Publish) {
+    $token = $env:GH_TOKEN
+    if (-not $token) {
+        $cred = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
+        $token = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
+    }
+    if (-not $token) { throw "No GitHub sign-in found. Set GH_TOKEN, or sign in to GitHub with git once." }
+    $headers = @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'preflight-release' }
+
+    $exists = $true
+    try { Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$tag" -Headers $headers | Out-Null }
+    catch { if ($_.Exception.Response.StatusCode.value__ -eq 404) { $exists = $false } else { throw } }
+    if ($exists) {
+        Write-Host "$tag is already released, so there's nothing to publish."
+        Write-Host "To release changes, raise `$Script:AppVersion in Preflight.ps1 and add that version to CHANGELOG.md."
+        exit 1
+    }
+}
+
 # ----- Update package ----------------------------------------------------------
 # What ships: the script, the launcher and the media folder. Nothing personal.
 $files = @("Preflight.ps1", "Preflight.exe")
@@ -89,19 +110,6 @@ if (-not $section.Success) { throw "CHANGELOG.md has no '## [$version]' section.
 $notes = "**New laptop?** Download **PreflightSetup.exe** below and run it. Laptops that already have Preflight " +
          "update by themselves the next time it starts.`n`n" + $section.Groups[1].Value.Trim() +
          "`n`n---`n``Preflight.zip`` and ``Preflight.zip.sha256`` are what the updater uses. Keep them attached."
-
-$token = $env:GH_TOKEN
-if (-not $token) {
-    $cred = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
-    $token = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
-}
-if (-not $token) { throw "No GitHub sign-in found. Set GH_TOKEN, or sign in to GitHub with git once." }
-$headers = @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'preflight-release' }
-
-$exists = $true
-try { Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$tag" -Headers $headers | Out-Null }
-catch { if ($_.Exception.Response.StatusCode.value__ -eq 404) { $exists = $false } else { throw } }
-if ($exists) { throw "Release $tag already exists. Bump the version in Preflight.ps1 first." }
 
 $body = @{ tag_name = $tag; target_commitish = 'main'; name = "Preflight $version"; body = $notes
            draft = $false; prerelease = $false; make_latest = 'true' } | ConvertTo-Json
